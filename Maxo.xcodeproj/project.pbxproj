@@ -1,0 +1,46 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		D73E5452C1C5947D35B9BCDB = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UI/MixerRowDrag.swift"; sourceTree = "<group>"; };
+		DE189BC4A55275783A510A4E = { isa = PBXBuildFile; fileRef = D73E5452C1C5947D35B9BCDB; };
+		FD4D5F585E457024DE426A3C = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Audio/HAL.swift"; sourceTree = "<group>"; };
+		B8C29F67362C6A964106A6FA = { isa = PBXBuildFile; fileRef = FD4D5F585E457024DE426A3C; };
+		586856F866DE6382C6ED3C81 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Audio/MixerEngine.swift"; sourceTree = "<group>"; };
+		E7D074125BBD2474F2A9982C = { isa = PBXBuildFile; fileRef = 586856F866DE6382C6ED3C81; };
+		50A3311B07733B6DC0E9FB24 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Audio/PlaybackProcesses.swift"; sourceTree = "<group>"; };
+		CEFA96C13061AF94E39226AB = { isa = PBXBuildFile; fileRef = 50A3311B07733B6DC0E9FB24; };
+		E3A8DA3FB05DBD7BBCC6F659 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Audio/PlaybackRoute.swift"; sourceTree = "<group>"; };
+		F648175D7049EAB1FC6B1F1D = { isa = PBXBuildFile; fileRef = E3A8DA3FB05DBD7BBCC6F659; };
+		F67428B5FAF9F52D46B5A218 = { isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "Audio/RouteIO.c"; sourceTree = "<group>"; };
+		54DA925BEE9E2B1240AE4671 = { isa = PBXBuildFile; fileRef = F67428B5FAF9F52D46B5A218; };
+		1DA91507A14E0BE448DEAF7F = { isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Audio/RouteIO.h"; sourceTree = "<group>"; };
+		7B594B6DB375E1BF3F23CDD6 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		3E17767F16EAFA975FB86126 = { isa = PBXFileReference; lastKnownFileType = image.icns; path = "Maxo.icns"; sourceTree = "<group>"; };
+		6194D9E771660E0B1A26E9EC = { isa = PBXBuildFile; fileRef = 3E17767F16EAFA975FB86126; };
+		D37D73E32AEF680F80708FD2 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MaxoApp.swift"; sourceTree = "<group>"; };
+		BDF6394CA53528BF1D8404BC = { isa = PBXBuildFile; fileRef = D37D73E32AEF680F80708FD2; };
+		2B2234BA4E00929BFE4D91D4 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MixerModel.swift"; sourceTree = "<group>"; };
+		DCCCA2AE3D7A7A0576BEB418 = { isa = PBXBuildFile; fileRef = 2B2234BA4E00929BFE4D91D4; };
+		AD09AE51B053D71BD06E2CD4 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UI/MixerView.swift"; sourceTree = "<group>"; };
+		B63582D8E70D1F4B09E690C8 = { isa = PBXBuildFile; fileRef = AD09AE51B053D71BD06E2CD4; };
+		38A007151ABE87CC01A5B6E9 = { isa = PBXFileReference; explicitFileType = wrapper.application; path = Maxo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FBDC4F23F93125BBEEAE800C = { isa = PBXGroup; children = (38A007151ABE87CC01A5B6E9); name = Products; sourceTree = "<group>"; };
+		D4A9ABEA72A23BC6022BD96B = { isa = PBXGroup; children = (FD4D5F585E457024DE426A3C, 586856F866DE6382C6ED3C81, 50A3311B07733B6DC0E9FB24, E3A8DA3FB05DBD7BBCC6F659, F67428B5FAF9F52D46B5A218, 1DA91507A14E0BE448DEAF7F, 7B594B6DB375E1BF3F23CDD6, 3E17767F16EAFA975FB86126, D37D73E32AEF680F80708FD2, 2B2234BA4E00929BFE4D91D4, AD09AE51B053D71BD06E2CD4, D73E5452C1C5947D35B9BCDB); path = Maxo; sourceTree = "<group>"; };
+		DC76E9F0C0006E8F919E0C51 = { isa = PBXGroup; children = (D4A9ABEA72A23BC6022BD96B, FBDC4F23F93125BBEEAE800C); sourceTree = "<group>"; };
+		BCE16DD0260827ECF338C787 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B8C29F67362C6A964106A6FA, E7D074125BBD2474F2A9982C, CEFA96C13061AF94E39226AB, F648175D7049EAB1FC6B1F1D, 54DA925BEE9E2B1240AE4671, BDF6394CA53528BF1D8404BC, DCCCA2AE3D7A7A0576BEB418, B63582D8E70D1F4B09E690C8, DE189BC4A55275783A510A4E); runOnlyForDeploymentPostprocessing = 0; };
+		7561BFB015D8F536760CB671 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		0189424A5A60FED329FA868E = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (6194D9E771660E0B1A26E9EC); runOnlyForDeploymentPostprocessing = 0; };
+		7FF1594F02A39252B36C2788 = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; GCC_C_LANGUAGE_STANDARD = gnu11; MACOSX_DEPLOYMENT_TARGET = 14.2; SDKROOT = macosx; SWIFT_VERSION = 5.0; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; ONLY_ACTIVE_ARCH = YES; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; DEBUG_INFORMATION_FORMAT = dwarf; }; name = Debug; };
+		8AF42D9F8E598D010F7434BA = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; GCC_C_LANGUAGE_STANDARD = gnu11; MACOSX_DEPLOYMENT_TARGET = 14.2; SDKROOT = macosx; SWIFT_VERSION = 5.0; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; SWIFT_COMPILATION_MODE = wholemodule; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; }; name = Release; };
+		96316AF13F45443E4E9C4BA0 = { isa = XCConfigurationList; buildConfigurations = (7FF1594F02A39252B36C2788, 8AF42D9F8E598D010F7434BA); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		199D118360F571651611CBB6 = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Manual; CODE_SIGN_IDENTITY = "-"; ENABLE_APP_SANDBOX = NO; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Maxo/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = com.maxo.mixer; PRODUCT_NAME = Maxo; SWIFT_OBJC_BRIDGING_HEADER = Maxo/Audio/RouteIO.h; }; name = Debug; };
+		68076E06222AB98C0FAF7D3B = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Manual; CODE_SIGN_IDENTITY = "-"; ENABLE_APP_SANDBOX = NO; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Maxo/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = com.maxo.mixer; PRODUCT_NAME = Maxo; SWIFT_OBJC_BRIDGING_HEADER = Maxo/Audio/RouteIO.h; }; name = Release; };
+		EAD1C478648BB5F4F725A516 = { isa = XCConfigurationList; buildConfigurations = (199D118360F571651611CBB6, 68076E06222AB98C0FAF7D3B); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		0E8A3AD980EC179856012B7E = { isa = PBXNativeTarget; buildConfigurationList = EAD1C478648BB5F4F725A516; buildPhases = (BCE16DD0260827ECF338C787, 7561BFB015D8F536760CB671, 0189424A5A60FED329FA868E); buildRules = (); dependencies = (); name = Maxo; productName = Maxo; productReference = 38A007151ABE87CC01A5B6E9; productType = "com.apple.product-type.application"; };
+		98F54143AB4E86B28C3AFEE0 = { isa = PBXProject; attributes = { LastUpgradeCheck = 2700; }; buildConfigurationList = 96316AF13F45443E4E9C4BA0; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = DC76E9F0C0006E8F919E0C51; productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (0E8A3AD980EC179856012B7E); };
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0;
+}
