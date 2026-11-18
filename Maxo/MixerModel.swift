@@ -87,6 +87,40 @@ final class MixerModel: ObservableObject {
         change(id, saveImmediately: false) { $0.volume = min(max(volume, 0), 1) }
     }
 
+    func setBoost(_ position: Double, for id: String) {
+        change(id, saveImmediately: false) { $0.boost = min(max(position, 0), 1) }
+    }
+
+    /// Swaps the normal slider at 100% for the boost slider at unity, so loudness is continuous.
+    func enterBoost(for id: String) {
+        change(id) {
+            guard $0.extraLoud else { return }
+            $0.volume = 1
+            $0.boost = AppSettings.boostUnityPosition
+        }
+    }
+
+    /// Returns from the boost slider to the normal slider, parked at 100%.
+    func exitBoost(for id: String) {
+        change(id) {
+            $0.volume = 1
+            $0.boost = nil
+        }
+    }
+
+    func toggleExtraLoud(for id: String) {
+        change(id) {
+            $0.extraLoud.toggle()
+            if $0.extraLoud {
+                // Already at the top: show the boost slider straight away, still at unity.
+                if $0.volume >= 1 { $0.boost = AppSettings.boostUnityPosition }
+            } else if $0.boost != nil {
+                $0.boost = nil
+                $0.volume = 1
+            }
+        }
+    }
+
     func toggleMute(for id: String) {
         change(id) { $0.muted.toggle() }
     }
@@ -183,8 +217,10 @@ final class MixerModel: ObservableObject {
         var updates: [String: AppSettings] = [:]
         for (app, volume) in levels {
             var preferences = preferences(for: app)
-            if abs(preferences.volume - volume) > 0.0001 {
+            // Balancing targets each app's unity level or below, so it leaves the boost range.
+            if abs(preferences.volume - volume) > 0.0001 || preferences.boost != nil {
                 preferences.volume = volume
+                preferences.boost = nil
                 updates[app] = preferences
             }
         }

@@ -11,6 +11,7 @@ Listen to Spotify on a Bluetooth speaker, keep YouTube in Chrome on your MacBook
 - **Mix apps independently.** Change an app’s volume while its audio is playing.
 - **Choose an output per app.** Select System Default or an available playback device.
 - **Use several outputs together.** Route different apps to different connected devices.
+- **Go past 100% with Extra Loud.** Right-click a row and choose Extra Loud. Drag the slider to its right end to open the red boost zone, up to +16 dB. A limiter prevents clipping, so loud, fully mastered tracks gain less than quiet ones. Drag to the left end to return to the normal slider at 100%.
 - **Balance loudness automatically.** Measure sustained playback and adjust the apps’ sliders to a similar level.
 - **See live audio levels.** Waveforms respond to playback, slider changes, mute, and silence.
 - **Arrange your mixer.** Drag a row by its background or app icon. The entire row follows the pointer.

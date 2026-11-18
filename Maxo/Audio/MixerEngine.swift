@@ -7,9 +7,40 @@ struct AppSettings: Codable, Equatable {
     var muted = false
     var preferredOutput: String?
     var preferredName: String?
+    /// Extra Loud is switched on from the row's context menu. While it is on, reaching the
+    /// right end of the normal slider swaps it for the boost slider.
+    var extraLoud = false
+    /// Thumb position on the boost slider, or nil while the normal slider is shown.
+    var boost: Double?
 
-    var gain: Float { muted ? 0 : Float(Self.gain(forVolume: volume)) }
-    var needsMixing: Bool { muted || volume < 1 || preferredOutput != nil }
+    var boosting: Bool { extraLoud && boost != nil }
+    var gain: Float {
+        if muted { return 0 }
+        if boosting, let boost {
+            // Guard the render thread: never below unity (no jump on entering) and never wild.
+            let boosted = Self.boostGain(forPosition: boost)
+            return Float(boosted.isFinite ? min(max(boosted, 1), 16) : 1)
+        }
+        return Float(Self.gain(forVolume: volume))
+    }
+    // A boosting route stays alive at unity so crossing 0 dB never reconnects the tap.
+    var needsMixing: Bool { muted || volume < 1 || preferredOutput != nil || boosting }
+
+    /// Where unity gain sits on the boost slider. Left of it is a neutral zone; the
+    /// red zone to its right is the boost range.
+    static let boostUnityPosition = 1.0 / 3.0
+
+    /// The top of the red zone. The limiter keeps it clean, so loud, fully mastered sources
+    /// gain less than this; quieter ones get all of it.
+    static let maxBoostDecibels = 16.0
+
+    /// Maps a boost-slider position (0...1) to a linear gain of 1 or more. The red zone is
+    /// spread evenly in decibels, so each step of travel sounds like the same step up.
+    static func boostGain(forPosition position: Double) -> Double {
+        let fraction = (position - boostUnityPosition) / (1 - boostUnityPosition)
+        guard fraction > 0 else { return 1 }
+        return pow(10, maxBoostDecibels * min(fraction, 1) / 20)
+    }
 
     /// Loudness is perceived logarithmically, so a linear slider crowds every audible
     /// change into its bottom quarter. A cubic taper spreads it across the travel:
@@ -22,6 +53,21 @@ struct AppSettings: Codable, Equatable {
 
     static func volume(forGain gain: Double) -> Double {
         pow(min(max(gain, 0), 1), 1 / taperExponent)
+    }
+}
+
+extension AppSettings {
+    // Settings saved by earlier versions lack the Extra Loud keys, so decode them leniently.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        volume = try values.decodeIfPresent(Double.self, forKey: .volume) ?? 1
+        muted = try values.decodeIfPresent(Bool.self, forKey: .muted) ?? false
+        preferredOutput = try values.decodeIfPresent(String.self, forKey: .preferredOutput)
+        preferredName = try values.decodeIfPresent(String.self, forKey: .preferredName)
+        extraLoud = try values.decodeIfPresent(Bool.self, forKey: .extraLoud) ?? false
+        boost = try values.decodeIfPresent(Double.self, forKey: .boost)
+            .flatMap { $0.isFinite ? min(max($0, 0), 1) : nil }
+        if !extraLoud { boost = nil }
     }
 }
 

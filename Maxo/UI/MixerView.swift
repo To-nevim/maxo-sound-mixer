@@ -363,6 +363,12 @@ private struct MixerRow: View {
 
     @ViewBuilder
     private var rowContextMenu: some View {
+        Toggle(isOn: Binding(get: { settings.extraLoud }, set: { _ in
+            withAnimation(reduceMotion ? nil : boostSpring) { model.toggleExtraLoud(for: source.id) }
+        })) {
+            Label("Extra Loud", systemImage: "flame")
+        }
+        Divider()
         let apps = model.sources
         if let index = apps.firstIndex(where: { $0.id == source.id }), apps.count > 1 {
             if index > 0 {
@@ -412,21 +418,30 @@ private struct MixerRow: View {
 
     private var volume: some View {
         HStack(spacing: compact ? 5 : 9) {
-            Slider(value: Binding(get: { settings.volume },
-                                  set: { model.setVolume($0, for: source.id) }),
-                   in: 0...1)
-                .controlSize(.regular)
-                .accessibilityLabel("\(source.app.name) volume")
-                .accessibilityValue(percent)
-            Text(percent)
+            VolumeSlider(id: source.id, appName: source.app.name, settings: settings,
+                         model: model, valueText: levelText)
+            Text(levelText)
                 .font(.system(size: compact ? 10 : 12, weight: .medium))
                 .monospacedDigit()
-                .foregroundStyle(settings.muted ? secondaryLabel : primaryLabel)
+                .foregroundStyle(settings.muted ? secondaryLabel : boostDecibels > 0.05 ? boostRed : primaryLabel)
                 .lineLimit(1)
                 .fixedSize()
-                .frame(width: 36, alignment: .trailing)
+                .frame(width: settings.extraLoud ? 44 : 36, alignment: .trailing)
+                .contentTransition(reduceMotion ? .identity : .numericText())
                 .accessibilityHidden(true)
         }
+        .animation(motion, value: settings.extraLoud)
+    }
+
+    private var boostDecibels: Double {
+        guard settings.boosting, let boost = settings.boost else { return 0 }
+        return 20 * log10(max(1, AppSettings.boostGain(forPosition: boost)))
+    }
+
+    private var levelText: String {
+        guard settings.boosting else { return percent }
+        let db = boostDecibels
+        return db < 0.05 ? "100%" : "+" + db.formatted(.number.precision(.fractionLength(db < 9.95 ? 1 : 0))) + " dB"
     }
 
     private var mute: some View {
@@ -488,6 +503,145 @@ private struct MixerRow: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+private let boostRed = Color(red: 1, green: 0.23, blue: 0.19)
+private let boostGradient = LinearGradient(colors: [.orange, boostRed], startPoint: .leading, endPoint: .trailing)
+private let boostSpring = Animation.spring(response: 0.55, dampingFraction: 0.68)
+
+/// A two-stage volume slider. Normally it is a plain 0–100% slider. With Extra Loud on,
+/// dragging to the right end swaps it for the boost slider: the thumb springs back to the
+/// unity mark at one third and the red zone to its right raises the level above 100%.
+/// Dragging the boost slider to its left end swaps back, with the thumb parked at 100%.
+private struct VolumeSlider: View {
+    let id: String
+    let appName: String
+    let settings: AppSettings
+    @ObservedObject var model: MixerModel
+    let valueText: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var drag: DragState?
+    @State private var flare = 1.0
+
+    private struct DragState {
+        var startValue: Double
+        var onThumb: Bool
+        // Set after a mode swap so the rest of this drag can't run the new slider to its far end.
+        var latched = false
+    }
+
+    private static let thumb: CGFloat = 18
+    private var boosting: Bool { settings.boosting }
+    private var value: Double { boosting ? settings.boost ?? 0 : settings.volume }
+    private var redStart: Double { boosting ? AppSettings.boostUnityPosition : 1 }
+    private var swapAnimation: Animation? { reduceMotion ? nil : boostSpring }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let usable = max(1, width - Self.thumb)
+            let x = Self.thumb / 2 + usable * value
+            let redX = Self.thumb / 2 + usable * redStart
+            let heat = boosting ? min(1, max(0, (value - redStart) / (1 - redStart))) : 0
+            ZStack(alignment: .leading) {
+                Capsule().fill(primaryLabel.opacity(0.13))
+                    .frame(width: width, height: 4)
+                // The boost range. While armed it is a small red cap at the right end.
+                Capsule().fill(boostGradient.opacity(boosting ? 0.3 : 0.75))
+                    .frame(width: max(4, width - redX), height: 4)
+                    .offset(x: min(redX, width - 4))
+                    .opacity(settings.extraLoud ? 1 : 0)
+                Capsule().fill(settings.muted ? secondaryLabel : accent)
+                    .frame(width: max(4, min(x, redX)), height: 4)
+                if boosting && x > redX {
+                    Capsule().fill(boostGradient)
+                        .frame(width: x - redX + 2, height: 4)
+                        .offset(x: redX - 1)
+                        .shadow(color: boostRed.opacity(0.6 * heat), radius: 3 * heat)
+                }
+                if boosting {
+                    Capsule().fill(secondaryLabel.opacity(0.7))
+                        .frame(width: 1.5, height: 10)
+                        .offset(x: redX - 0.75)
+                        .transition(.opacity)
+                }
+                Circle().strokeBorder(boostGradient, lineWidth: 2)
+                    .frame(width: Self.thumb, height: Self.thumb)
+                    .scaleEffect(1 + 1.9 * flare)
+                    .opacity(1 - flare)
+                    .offset(x: x - Self.thumb / 2)
+                Circle().fill(.white)
+                    .overlay { Circle().strokeBorder(boosting ? AnyShapeStyle(boostGradient) : AnyShapeStyle(outline),
+                                                     lineWidth: boosting ? 1.5 : 0.5) }
+                    .shadow(color: boosting ? boostRed.opacity(0.35 + 0.5 * heat) : .black.opacity(0.25),
+                            radius: boosting ? 2 + 5 * heat : 1.5, y: boosting ? 0 : 0.5)
+                    .frame(width: Self.thumb, height: Self.thumb)
+                    .offset(x: x - Self.thumb / 2)
+            }
+            .frame(width: width, height: geometry.size.height)
+            .contentShape(Rectangle())
+            .gesture(dragGesture(usable: usable))
+        }
+        .frame(height: 22)
+        .onChange(of: boosting) { _, now in
+            guard now, !reduceMotion else { return }
+            var reset = Transaction()
+            reset.disablesAnimations = true
+            withTransaction(reset) { flare = 0 }
+            DispatchQueue.main.async { withAnimation(.easeOut(duration: 0.75)) { flare = 1 } }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("\(appName) volume")
+        .accessibilityValue(valueText)
+        .accessibilityHint(settings.extraLoud ? "Extra Loud is on. Go past 100% to boost." : "")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: apply(value + 0.05, allowSwap: true)
+            case .decrement: apply(value - 0.05, allowSwap: true)
+            @unknown default: break
+            }
+        }
+    }
+
+    private func dragGesture(usable: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { gesture in
+                if drag == nil {
+                    // Grabbing the thumb moves it relative to the pointer, like a native slider;
+                    // clicking the track jumps there.
+                    let thumbX = Self.thumb / 2 + usable * value
+                    let onThumb = abs(gesture.startLocation.x - thumbX) <= Self.thumb / 2 + 2
+                    let start = onThumb ? value : Double((gesture.startLocation.x - Self.thumb / 2) / usable)
+                    drag = DragState(startValue: start, onThumb: onThumb)
+                }
+                guard let state = drag, !state.latched else { return }
+                let target = state.startValue + Double(gesture.translation.width / usable)
+                // Pressing the thumb while it rests at an end must not swap modes by itself.
+                let moved = !state.onThumb || abs(gesture.translation.width) >= 1
+                if apply(target, allowSwap: moved) { drag?.latched = true }
+            }
+            .onEnded { _ in drag = nil }
+    }
+
+    /// Applies a slider position, swapping modes at the ends. Returns true when it swapped.
+    @discardableResult
+    private func apply(_ target: Double, allowSwap: Bool) -> Bool {
+        let position = min(max(target, 0), 1)
+        if boosting {
+            if allowSwap && position <= 0 {
+                withAnimation(swapAnimation) { model.exitBoost(for: id) }
+                return true
+            }
+            model.setBoost(position, for: id)
+        } else {
+            if allowSwap && settings.extraLoud && position >= 1 {
+                withAnimation(swapAnimation) { model.enterBoost(for: id) }
+                return true
+            }
+            model.setVolume(position, for: id)
+        }
+        return false
     }
 }
 

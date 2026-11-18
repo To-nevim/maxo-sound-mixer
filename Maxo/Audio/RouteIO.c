@@ -33,6 +33,9 @@ struct MaxoRouteIO {
     _Atomic(uint64_t) cycles;
     float gain;
     float gainStep;
+    // Peak limiter for Extra Loud: instant attack, smooth release, never above the ceiling.
+    float limiterEnvelope;
+    float limiterRelease;
     UInt32 tapBuffer;
     UInt32 leftChannel;
     UInt32 rightChannel;
@@ -91,6 +94,7 @@ MaxoRouteIO *MaxoRouteIOCreate(UInt32 tapBuffer, UInt32 leftChannel, UInt32 righ
         atomic_init(&state->cycles, 0);
         state->gain = gain;
         state->gainStep = 1.0f / (float)(sampleRate * 0.005);
+        state->limiterRelease = (float)exp(-1.0 / (sampleRate * 0.15));
         state->tapBuffer = tapBuffer;
         state->leftChannel = leftChannel;
         state->rightChannel = rightChannel;
@@ -309,6 +313,8 @@ OSStatus MaxoRouteRender(AudioObjectID device, const AudioTimeStamp *now,
     }
     float gain = state->gain;
     float target = atomic_load_explicit(&state->targetGain, memory_order_relaxed);
+    float envelope = state->limiterEnvelope;
+    const float limiterCeiling = 0.97f;
     for (UInt32 frame = 0; frame < frames; ++frame) {
         gain += fminf(state->gainStep, fmaxf(-state->gainStep, target - gain));
         float position = (float)frame * ratio;
@@ -318,11 +324,21 @@ OSStatus MaxoRouteRender(AudioObjectID device, const AudioTimeStamp *now,
         float r = sampleAt(sourceRight, index, sourceFrames, position - (float)index);
         if (mono) { l = (l + r) * 0.5f; }
         float peak = fmaxf(fabsf(l), mono ? 0 : fabsf(r));
-        waveformSample(state, peak, peak * gain);
+        // Gain above unity can push samples past full scale. The envelope follows the source
+        // peak (instant attack, ~150 ms release) and caps the boost so the output stays under
+        // the ceiling. Capping the gain rather than the output means a lower slider setting
+        // takes effect at once, and the cap fades out smoothly as the gain returns to unity.
+        envelope = fmaxf(peak, envelope * state->limiterRelease);
+        float applied = gain;
+        if (gain > 1.0f && envelope > 0.0f) {
+            applied = fmaxf(1.0f, fminf(gain, limiterCeiling / envelope));
+        }
+        float outL = l * applied, outR = r * applied, outPeak = peak * applied;
+        waveformSample(state, peak, outPeak);
         if (forwards) {
-            left.samples[frame * left.stride] = l * gain;
+            left.samples[frame * left.stride] = outL;
             if (!mono) {
-                right.samples[frame * right.stride] = r * gain;
+                right.samples[frame * right.stride] = outR;
             }
         }
         if (measurement && meter->blockCount < meterCapacity) {
@@ -330,6 +346,7 @@ OSStatus MaxoRouteRender(AudioObjectID device, const AudioTimeStamp *now,
         }
     }
     state->gain = gain;
+    state->limiterEnvelope = envelope;
     atomic_fetch_add_explicit(&state->cycles, 1, memory_order_relaxed);
     return noErr;
 }
