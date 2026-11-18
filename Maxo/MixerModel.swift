@@ -37,6 +37,7 @@ final class MixerModel: ObservableObject {
     private let settingsKey = "maxo.playback.settings"
     private let hiddenKey = "maxo.mixer.hiddenApps"
     private let orderKey = "maxo.mixer.appOrder"
+    private static let curveKey = "maxo.playback.volumeCurve"
     private var engine: MixerEngine?
     private var saveTask: Task<Void, Never>?
 
@@ -44,14 +45,22 @@ final class MixerModel: ObservableObject {
         self.defaults = defaults
         let data = defaults.data(forKey: settingsKey)
         var restored = data.flatMap { try? JSONDecoder().decode([String: AppSettings].self, from: $0) } ?? [:]
+        // Volumes saved before the cubic taper were linear gains. Convert them once so
+        // each app keeps the loudness it had; only the slider position moves.
+        let migrateLinear = data != nil && defaults.integer(forKey: Self.curveKey) < 2
         for id in restored.keys {
             if let volume = restored[id]?.volume {
-                restored[id]?.volume = volume.isFinite ? min(max(volume, 0), 1) : 1
+                let clamped = volume.isFinite ? min(max(volume, 0), 1) : 1
+                restored[id]?.volume = migrateLinear ? AppSettings.volume(forGain: clamped) : clamped
             }
         }
         self.settings = restored
         hiddenApps = defaults.dictionary(forKey: hiddenKey) as? [String: String] ?? [:]
         appOrder = defaults.stringArray(forKey: orderKey) ?? []
+        // Persist converted volumes together with the marker, so an early exit can't
+        // leave linear values flagged as already migrated.
+        if migrateLinear { save() }
+        defaults.set(2, forKey: Self.curveKey)
     }
 
     func start() {

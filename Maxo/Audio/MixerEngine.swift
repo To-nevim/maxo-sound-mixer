@@ -8,8 +8,21 @@ struct AppSettings: Codable, Equatable {
     var preferredOutput: String?
     var preferredName: String?
 
-    var gain: Float { muted ? 0 : Float(volume) }
+    var gain: Float { muted ? 0 : Float(Self.gain(forVolume: volume)) }
     var needsMixing: Bool { muted || volume < 1 || preferredOutput != nil }
+
+    /// Loudness is perceived logarithmically, so a linear slider crowds every audible
+    /// change into its bottom quarter. A cubic taper spreads it across the travel:
+    /// 80% ≈ −6 dB, 50% ≈ −18 dB, 30% ≈ −31 dB, 10% ≈ −60 dB, and 100% stays unity.
+    static let taperExponent = 3.0
+
+    static func gain(forVolume volume: Double) -> Double {
+        pow(min(max(volume, 0), 1), taperExponent)
+    }
+
+    static func volume(forGain gain: Double) -> Double {
+        pow(min(max(gain, 0), 1), 1 / taperExponent)
+    }
 }
 
 struct MixerSource: Identifiable, Equatable {
@@ -202,7 +215,8 @@ final class MixerEngine: @unchecked Sendable {
             return [:]
         }
         return Dictionary(uniqueKeysWithValues: amplitudes.map { id, amplitude in
-            (id, min(1, target / amplitude))
+            // The ratio is the linear gain that matches loudness; convert it to a slider position.
+            (id, AppSettings.volume(forGain: min(1, target / amplitude)))
         })
     }
 
